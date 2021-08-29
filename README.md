@@ -105,4 +105,3 @@ Accelerate a car
 - Returns nothing
 
 To complete the race logic, find all the TODO tags in index.js and read the instructions.
-# UdaciRacer-Sim
