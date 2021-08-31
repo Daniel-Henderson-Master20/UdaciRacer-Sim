@@ -416,21 +416,46 @@ function createRace(player_id, track_id) {
         .catch(err => console.log("Problem with createRace request::", err))
 }
 
-function getRace(id) {
+async function getRace(id) {
     // GET request to `${SERVER}/api/races/${id}`
+    const raceId = parseInt(id);
+    try {
+        const data = await fetch(`${SERVER}/api/races/${raceId}`, {
+            method: "GET",
+            dataType: "jsonp",
+            ...defaultFetchOpts(),
+        });
+        return data.json();
+    } catch (error) {
+        console.log("Problem with getRace request::", error);
+    }
 }
 
-function startRace(id) {
-    return fetch(`${SERVER}/api/races/${id}/start`, {
-            method: 'POST',
+async function startRace(id) {
+    const raceId = parseInt(id);
+    try {
+        const data = await fetch(`${SERVER}/api/races/${raceId}/start`, {
+            method: `POST`,
+            dataType: 'jsonp',
             ...defaultFetchOpts(),
-        })
-        .then(res => res.json())
-        .catch(err => console.log("Problem with getRace request::", err))
+        });
+        return data;
+    } catch (err) {
+        console.log("Problem with startRace request::", err);
+    }
 }
 
 function accelerate(id) {
     // POST request to `${SERVER}/api/races/${id}/accelerate`
     // options parameter provided as defaultFetchOpts
     // no body or datatype needed for this request
+    const raceId = parseInt(id);
+    try {
+        const data = await fetch(`${SERVER}/api/races/${raceId}/accelerate`, {
+            method: 'POST',
+            ...defaultFetchOpts(),
+        });
+    } catch (error) {
+        console.log("Problem with accelerate request::", error);
+    }
 }
