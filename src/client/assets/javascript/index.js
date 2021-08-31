@@ -246,6 +246,7 @@ function renderRacerCard(racer) {
 			<p>${top_speed}</p>
 			<p>${acceleration}</p>
 			<p>${handling}</p>
+			<img class="racerCard" src="src/client/images/Racer_${id}.jpeg" alt="${customRacerName[driver_name]}"/>
 		</li>
 	`
 }
@@ -272,6 +273,7 @@ function renderTrackCard(track) {
     return `
 		<li id="${id}" class="card track">
 			<h3>${name}</h3>
+			<img class="trackCard" src="src/client/images/Track_${id}.jpeg"/>
 		</li>
 	`
 }
