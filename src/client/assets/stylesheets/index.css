@@ -22,7 +22,7 @@ body {
 }
 
 header {
-    background-image: url('.../images/1st Sparrow race img.jpeg');
+    background-image: url('/images/1st Sparrow race img.jpeg');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
