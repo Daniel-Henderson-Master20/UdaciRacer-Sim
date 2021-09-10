@@ -1,0 +1,6 @@
+node_modules/
+yarn.lock
+bin
+package.json
+data.json
+.DS_Store
