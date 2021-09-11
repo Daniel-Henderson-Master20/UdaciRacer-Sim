@@ -2,6 +2,8 @@ let store = {
 	track_id: undefined,
 	player_id: undefined,
 	race_id: undefined,
+	tracks: undefined,
+	status: undefined
 }
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -11,12 +13,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 async function onPageLoad() {
 	try {
-		await getTracks()
+		 getTracks()
 			.then(tracks => {
 				const html = renderTrackCards(tracks)
 				renderAt('#tracks', html)
+				store.tracks = tracks
 			})
-		await getRacers()
+		 getRacers()
 			.then((racers) => {
 				const html = renderRacerCars(racers)
 				renderAt('#racers', html)
@@ -66,97 +69,83 @@ async function delay(ms) {
 
 async function handleCreateRace() {
 	
-		const {player_id, track_id} = store;
+	let {player_id, track_id, track_name} = store
 		
-		if (!player_id || !track_id) 
-			return alert("Please select racer and track to start the race!");
+		const race = await createRace(player_id, track_id)
+		renderAt('#race', renderRaceStartView(track_name))
+		store.race_id = race.ID - 1
+		store.status = race.Results.status
+		await runCountdown()
+		await startRace(store.race_id)
+		await runRace(store.race_id, store.status)
+} 	
 
-		 	try {
-				const race = await createRace(player_id, track_id);
-				renderAt('#race', renderRaceStartView(track_id));
-				store.race_id = parseInt(race.ID) - 1;
-				await runCountdown();
-				await startRace(store.race_id);
-				await runRace(store.race_id);
-				console.log('raceRun::',raceRun);
-			} 	catch (err) {
-				console.log("Problem with handleCreateRace: ", err.message);
-				}
-}
 
-function runRace(raceID) {
-	return (
-		 new Promise(resolve => {
-
-		const racerInterval = setInterval(
-			() => 
-			getRace(raceID).then(race => {
-				if(race.status === 'in-progress') 
-					renderAt('#leaderBoard', raceProgress(race.positions));
-				if(race.status === 'finished') {
-					clearInterval(racerInterval); 
-					renderAt('#race', resultsView(race.positions)); 
-					resolve(race);
-				}
-			}),	
-		500
-	  ); 
-	})	
-	 .catch(error => console.log(error))
-  );
+function runRace(raceID, status) {
+	try {
+	  return new Promise((resolve) => {
+		const interval = setInterval(async () => {
+		  let data = await getRace(raceID);
+		  resolve(data); 
+		  if (data.status === "in-progress") {
+				renderAt("#leaderBoard", raceProgress(data.positions));
+		  	}
+		  	if (data.status === "finished") {
+				clearInterval(interval);
+				renderAt("#race", resultsView(data.positions));
+				resolve(data);
+		  }
+		}, 500);
+	  });
+	} catch (error) {
+	  console.log(error);
+	}
 }
 
 async function runCountdown() {
 	try {
-		
 		await delay(1000)
 		let timer = 3
 
 		return new Promise(resolve => {
 			const interval = setInterval(() => {
-				if (timer !== 0) {
-					console.log(timer);
-					document.getElementById('gas-pedal').disabled = true;
-					document.getElementById('big-numbers').innerHTML = --timer
-				} else {
+					document.getElementById('big-numbers').innerHTML = --timer;
+					if (timer == 0) {
 					clearInterval(interval);
 					resolve();
-					document.getElementById('gas-pedal').disabled = false;
+					return;
 				}
 			}, 1000);
-		})
+		});
 	} catch(error) {
 		console.log(error);
 	}
 }
 
 function handleSelectPodRacer(target) {
-	console.log("selected a pod", target.id)
 
 	const selected = document.querySelector('#racers .selected')
 	if(selected) {
 		selected.classList.remove('selected')
 	}
 	target.classList.add('selected')
-	store.player_id = parseInt(target.id)
+	store.player_id = target.id
 }
 
 function handleSelectTrack(target) {
-	console.log("selected a track", target.id)
 
 	const selected = document.querySelector('#tracks .selected')
 	if(selected) {
 		selected.classList.remove('selected')
 	}
 	target.classList.add('selected')
-	store.track_id = parseInt(target.id)
+	store.track_id = target.id
+	store.track_name = store.tracks[store.track_id - 1].name
+	store.track_id = target.id
 }
 
 function handleAccelerate() {
-	
 	accelerate(store.race_id)
-		.then(()=> console.log("accelerate button clicked"))
-		.catch((error)=>console.log(error))
 }
 
 function renderRacerCars(racers) {
@@ -181,8 +170,6 @@ function renderRacerCard(racer) {
 			<p>${top_speed}</p>
 			<p>${acceleration}</p>
 			<p>${handling}</p>
-            
-		
 		</li>
 	`
 }
@@ -218,10 +205,10 @@ function renderCountdown(count) {
 	`
 }
 
-function renderRaceStartView(track, racers) {
+function renderRaceStartView(track_name) {
 	return `
 		<header>
-			<h1>Race: ${track.name}</h1>
+			<h1>Race: ${track_name}</h1>
 		</header>
 		<main id="two-columns">
 			<section id="leaderBoard">
@@ -251,7 +238,7 @@ function resultsView(positions) {
 }
 
 function raceProgress(positions) {
-	let userPlayer = positions.find(e => e.id === store.player_id)
+	let userPlayer = positions[store.player_id]
 		userPlayer.driver_name += " (you)"
 		positions = positions.sort((a, b) => (a.segment > b.segment) ? -1 : 1)
 	let count = 1
@@ -318,28 +305,23 @@ function createRace(player_id, track_id) {
 }
 
 function getRace(id) {
-	id = parseInt(id)-1;
-	return fetch(`${SERVER}/api/races/${id}`,{
-			method: 'GET',
-			...defaultFetchOpts(),
-		})
+	return fetch(`${SERVER}/api/races/${id}`)
 		.then((res) => res.json())
-		.catch((error) => console.log("Problem with getRace request::", error))
+		.catch(error => console.log(error))
 }
 
 function startRace(id) {
-	return fetch(`${SERVER}/api/races/${id}/start`, {
+	return fetch(`${SERVER}/api/races/${id}/start`, {  //ISSUES WITH THIS --> How does race status change from "unstarted" to "in-progress"
 		method: 'POST',
 		...defaultFetchOpts(),
 	})
-	.then(res => res.json())
-	.catch(err => console.log("Problem with startRace request::", error))
+	.catch(err => console.log("Problem with getRace request::", err))
 }
 
 function accelerate(id) {
-	return fetch(`${SERVER}/api/races/${id}/accelerate`,{
-		method: 'POST',
-		...defaultFetchOpts()
-	})
-	.catch(error => console.log(error))
+	return fetch(`${SERVER}/api/races/${id}/accelerate`, {
+		method: "POST",
+		...defaultFetchOpts(),
+		body: [],
+	  }).catch((error) => console.log(error));
 }
