@@ -1,7 +1,7 @@
 {
-  "name": "pod_racer_sim",
+  "name": "Sparrow_racer_sim",
   "version": "1.0.0",
-  "description": "Racing simulator for Pod Racers",
+  "description": "Racing simulator for Sparrow Racers. All images and conepts are from Bungie's Destiny video game",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
